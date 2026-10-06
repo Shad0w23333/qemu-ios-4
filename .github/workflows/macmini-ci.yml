@@ -20,7 +20,7 @@ defaults:
     shell: bash -e -o pipefail {0}
 jobs:
   check:
-    name: Offline source checks
+    name: Native QEMU build and tests
     if: ${{ github.actor == github.repository_owner && (github.event_name == 'push' || github.event_name == 
       'workflow_dispatch') }}
     runs-on:
@@ -40,7 +40,7 @@ jobs:
         submodules: false
     - name: Offline syntax and manifest checks
       run: python3 /Users/Shared/macmini-ci/bin/validate-assets.py
-    - name: Record check coverage
+    - name: Build QEMU and run project tests
       run: python3 /Users/Shared/macmini-ci/bin/project-ci.py
     - name: Collect CI outputs
       if: ${{ always() && env.MACMINI_FRESH == 'true' }}
