@@ -25,7 +25,8 @@ crypto_ss.add(files(
 ))
 
 if gnutls.found()
-  crypto_ss.add(files(
+  # TLS sources need GnuTLS even when gcrypt/nettle implements ciphers.
+  crypto_ss.add(gnutls, files(
     'tlscredsbox.c',
     'x509-utils.c',
   ))
