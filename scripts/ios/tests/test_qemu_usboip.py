@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import socket
 import subprocess
 import sys
@@ -11,7 +12,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-QEMU = ROOT / "build/qemu-system-arm"
+QEMU = Path(os.environ.get("QTEST_QEMU_BINARY", ROOT / "build/qemu-system-arm"))
+if "QTEST_QEMU_BINARY" in os.environ and not QEMU.is_file():
+    raise RuntimeError("Configured QTEST_QEMU_BINARY is not built")
 sys.path.insert(0, str(ROOT / "scripts/ios"))
 
 from usboip import (  # noqa: E402

@@ -968,6 +968,27 @@ static void test_cipher_gcm(const void *opaque)
     g_assert_cmpmem(tag, sizeof(tag), tagexp, ntag);
     qcrypto_cipher_free(cipher);
 
+    /* Truncated tags must match the vector prefix and leave the tail intact. */
+    for (size_t taglen = 8; taglen <= 12; taglen += 4) {
+        memset(tag, 0xa5, sizeof(tag));
+        cipher = qcrypto_cipher_new(data->alg, QCRYPTO_CIPHER_MODE_GCM,
+                                    key, nkey, &error_abort);
+        g_assert(qcrypto_cipher_setiv(cipher, iv, niv, &error_abort) == 0);
+        if (naad) {
+            g_assert(qcrypto_cipher_setaad(cipher, aad, naad,
+                                          &error_abort) == 0);
+        }
+        g_assert(qcrypto_cipher_encrypt(cipher, ptext, out, nptext,
+                                        &error_abort) == 0);
+        g_assert(qcrypto_cipher_gettag(cipher, tag, taglen,
+                                      &error_abort) == 0);
+        g_assert_cmpmem(tag, taglen, tagexp, taglen);
+        for (size_t i = taglen; i < sizeof(tag); i++) {
+            g_assert_cmpuint(tag[i], ==, 0xa5);
+        }
+        qcrypto_cipher_free(cipher);
+    }
+
     /* Decrypt: ciphertext -> plaintext, recomputed tag must match. */
     memset(out, 0, nptext);
     cipher = qcrypto_cipher_new(data->alg, QCRYPTO_CIPHER_MODE_GCM,

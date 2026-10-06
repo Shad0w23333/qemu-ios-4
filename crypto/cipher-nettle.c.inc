@@ -19,6 +19,7 @@
  */
 
 #include <nettle/nettle-types.h>
+#include <nettle/version.h>
 #include <nettle/aes.h>
 #include <nettle/des.h>
 #include <nettle/cbc.h>
@@ -477,8 +478,23 @@ static int qcrypto_nettle_aes_gcm_gettag(QCryptoCipher *cipher,
 {
     QCryptoNettleAESGCM *ctx = container_of(cipher, QCryptoNettleAESGCM, base);
 
+    if (len > GCM_DIGEST_SIZE) {
+        error_setg(errp, "GCM tag length must not exceed %d bytes",
+                   GCM_DIGEST_SIZE);
+        return -1;
+    }
+#if NETTLE_VERSION_MAJOR >= 4
+    /* Nettle 4 always writes a full tag; preserve the caller's tag length. */
+    uint8_t digest[GCM_DIGEST_SIZE];
+    gcm_digest(&ctx->gcm_ctx, &ctx->gcm_key, &ctx->cipher, ctx->encrypt,
+               digest);
+    if (len) {
+        memcpy(tag, digest, len);
+    }
+#else
     gcm_digest(&ctx->gcm_ctx, &ctx->gcm_key, &ctx->cipher, ctx->encrypt,
                len, tag);
+#endif
     return 0;
 }
 
