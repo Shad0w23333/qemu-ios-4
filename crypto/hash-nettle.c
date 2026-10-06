@@ -24,7 +24,9 @@
 #include "crypto/hash.h"
 #include "hashpriv.h"
 #include <nettle/md5.h>
-#include <nettle/sha.h>
+#include <nettle/sha1.h>
+#include <nettle/sha2.h>
+#include <nettle/version.h>
 #include <nettle/ripemd160.h>
 #ifdef CONFIG_CRYPTO_SM3
 #include <nettle/sm3.h>
@@ -34,9 +36,13 @@ typedef void (*qcrypto_nettle_init)(void *ctx);
 typedef void (*qcrypto_nettle_write)(void *ctx,
                                      size_t len,
                                      const uint8_t *buf);
+#if NETTLE_VERSION_MAJOR >= 4
+typedef void (*qcrypto_nettle_result)(void *ctx, uint8_t *buf);
+#else
 typedef void (*qcrypto_nettle_result)(void *ctx,
                                       size_t len,
                                       uint8_t *buf);
+#endif
 
 union qcrypto_hash_ctx {
     struct md5_ctx md5;
@@ -176,7 +182,11 @@ int qcrypto_nettle_hash_finalize(QCryptoHash *hash,
         return -1;
     }
 
+#if NETTLE_VERSION_MAJOR >= 4
+    qcrypto_hash_alg_map[hash->alg].result(ctx, *result);
+#else
     qcrypto_hash_alg_map[hash->alg].result(ctx, *result_len, *result);
+#endif
 
     return 0;
 }
